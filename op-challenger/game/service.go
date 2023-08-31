@@ -76,7 +76,7 @@ func NewService(ctx context.Context, logger log.Logger, cfg *config.Config) (*Se
 			return fault.NewGamePlayer(ctx, logger, m, cfg, dir, addr, txMgr, client)
 		})
 
-	monitor := newGameMonitor(logger, cl, loader, sched, cfg.GameWindow, client.BlockNumber, cfg.GameAllowlist)
+	monitor := newGameMonitor(logger, cl, loader, sched, cfg.GameWindow, client.BlockNumber, cfg.GameAllowlist, client)
 
 	m.RecordInfo(version.SimpleWithMeta)
 	m.RecordUp()
