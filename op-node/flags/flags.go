@@ -244,6 +244,12 @@ var (
 		EnvVars: prefixEnvVars("BETA_EXTRA_NETWORKS"),
 		Hidden:  true,
 	}
+	PostRegolithOverrideFlag = &cli.Uint64Flag{
+		Name:    "override.postregolith",
+		Usage:   "Manually specify the PostRegolith fork timestamp, overriding the bundled setting",
+		EnvVars: prefixEnvVars("OVERRIDE_POSTREGOLITH"),
+		Hidden:  true,
+	}
 )
 
 var requiredFlags = []cli.Flag{
@@ -286,6 +292,7 @@ var optionalFlags = []cli.Flag{
 	L2EngineSyncEnabled,
 	SkipSyncStartCheck,
 	BetaExtraNetworks,
+	PostRegolithOverrideFlag,
 }
 
 // Flags contains the list of configuration options available to the binary.

@@ -191,6 +191,10 @@ Conflicting configuration is deprecated, and will stop the op-node from starting
 		if err != nil {
 			return nil, err
 		}
+		if ctx.IsSet(flags.PostRegolithOverrideFlag.Name) {
+			postRegolith := ctx.Uint64(flags.PostRegolithOverrideFlag.Name)
+			config.PostRegolithTime = &postRegolith
+		}
 
 		return config, nil
 	}
@@ -204,6 +208,10 @@ Conflicting configuration is deprecated, and will stop the op-node from starting
 	var rollupConfig rollup.Config
 	if err := json.NewDecoder(file).Decode(&rollupConfig); err != nil {
 		return nil, fmt.Errorf("failed to decode rollup config: %w", err)
+	}
+	if ctx.IsSet(flags.PostRegolithOverrideFlag.Name) {
+		postRegolith := ctx.Uint64(flags.PostRegolithOverrideFlag.Name)
+		rollupConfig.PostRegolithTime = &postRegolith
 	}
 	return &rollupConfig, nil
 }
