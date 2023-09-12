@@ -135,7 +135,6 @@ func (m *gameMonitor) MonitorGames(ctx context.Context) error {
 			if !ok {
 				return err
 			}
-			m.logger.Error("l1 heads subscription error", "err", err)
 		}
 	}
 }
