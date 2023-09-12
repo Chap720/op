@@ -4,9 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
+	"runtime/pprof"
 	"syscall"
+	"time"
 
 	"github.com/urfave/cli/v2"
 
@@ -35,6 +38,8 @@ func main() {
 		}
 	}()
 
+	profile()
+
 	err := app.RunContext(ctx, os.Args)
 	if err != nil {
 		if errors.Is(err, ctx.Err()) {
@@ -45,4 +50,42 @@ func main() {
 			os.Exit(1)
 		}
 	}
+}
+
+func profile() {
+	d, _ := os.MkdirTemp("", "")
+	fmt.Println("Writing profile to", d)
+	go cpuProfile(d)
+	go memProfile(d)
+}
+
+func memProfile(d string) {
+	f, err := os.Create(fmt.Sprintf("%v/mem.profile", d))
+	if err != nil {
+		log.Fatal("could not create MEM profile: ", err)
+	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Fatal("could not close MEM profile: ", err)
+		}
+	}()
+	time.Sleep(40 * time.Minute)
+	pprof.WriteHeapProfile(f)
+}
+
+func cpuProfile(d string) {
+	f, err := os.Create(fmt.Sprintf("%v/cpu.profile", d))
+	if err != nil {
+		log.Fatal("could not create CPU profile: ", err)
+	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Fatal("could not close CPU profile: ", err)
+		}
+	}()
+	if err := pprof.StartCPUProfile(f); err != nil {
+		log.Fatal("could not start CPU profile: ", err)
+	}
+	time.Sleep(40 * time.Minute)
+	pprof.StopCPUProfile()
 }
