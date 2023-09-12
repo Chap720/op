@@ -108,8 +108,6 @@ func (m *gameMonitor) progressGames(ctx context.Context, blockNum uint64) error 
 }
 
 func (m *gameMonitor) MonitorGames(ctx context.Context) error {
-	m.logger.Info("Monitoring fault dispute games")
-
 	onNewL1Head := func(ctx context.Context, sig eth.L1BlockRef) {
 		if err := m.progressGames(ctx, sig.Number); err != nil {
 			m.logger.Error("Failed to progress games", "err", err)
