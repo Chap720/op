@@ -128,9 +128,6 @@ func (m *gameMonitor) MonitorGames(ctx context.Context) error {
 	}
 
 	resubFn := func(innerCtx context.Context, err error) (event.Subscription, error) {
-		if ctx.Err() != nil {
-			return nil, ctx.Err()
-		}
 		if err != nil {
 			m.logger.Warn("resubscribing after failed L1 subscription", "err", err)
 		}

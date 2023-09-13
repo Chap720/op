@@ -76,7 +76,7 @@ func NewService(ctx context.Context, logger log.Logger, cfg *config.Config) (*Se
 			return fault.NewGamePlayer(ctx, logger, m, cfg, dir, addr, txMgr, l1Client)
 		})
 
-	polledClient, err := client.DialPolledClientWithTimeout(client.DefaultDialTimeout, logger, cfg.L1EthRpc, cfg.PollInterval)
+	polledClient, err := client.DialPolledClientWithTimeout(ctx, client.DefaultDialTimeout, logger, cfg.L1EthRpc, cfg.PollInterval)
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial L1: %w", err)
 	}
