@@ -74,6 +74,7 @@ func TestMonitorGames(t *testing.T) {
 				return false, nil
 			})
 			require.NoError(t, waitErr)
+			mockHeadSource.err = fmt.Errorf("eth subscribe test error")
 			cancel()
 		}()
 
@@ -115,6 +116,7 @@ func TestMonitorGames(t *testing.T) {
 				return false, nil
 			})
 			require.NoError(t, waitErr)
+			mockHeadSource.err = fmt.Errorf("eth subscribe test error")
 			cancel()
 		}()
 
@@ -185,6 +187,7 @@ func setupMonitorTest(
 
 type mockNewHeadSource struct {
 	sub *mockSubscription
+	err error
 }
 
 func (m *mockNewHeadSource) EthSubscribe(
@@ -194,14 +197,11 @@ func (m *mockNewHeadSource) EthSubscribe(
 ) (ethereum.Subscription, error) {
 	errChan := make(chan error)
 	m.sub = &mockSubscription{errChan, (ch).(chan<- *ethtypes.Header)}
+	if m.err != nil {
+		return nil, m.err
+	}
 	return m.sub, nil
 }
-
-// func (m *mockNewHeadSource) SubscribeNewHead(ctx context.Context, ch chan<- *ethtypes.Header) (ethereum.Subscription, error) {
-// 	errChan := make(chan error)
-// 	m.sub = &mockSubscription{errChan, ch}
-// 	return m.sub, nil
-// }
 
 type mockSubscription struct {
 	errChan chan error
