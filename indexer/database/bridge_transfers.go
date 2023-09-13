@@ -40,6 +40,7 @@ type L1BridgeDepositWithTransactionHashes struct {
 
 	L1TransactionHash common.Hash `gorm:"serializer:bytes"`
 	L2TransactionHash common.Hash `gorm:"serializer:bytes"`
+	L1BlockHash       common.Hash `gorm:"serializer:bytes"`
 }
 
 type L2BridgeWithdrawal struct {
@@ -50,6 +51,7 @@ type L2BridgeWithdrawal struct {
 type L2BridgeWithdrawalWithTransactionHashes struct {
 	L2BridgeWithdrawal L2BridgeWithdrawal `gorm:"embedded"`
 	L2TransactionHash  common.Hash        `gorm:"serializer:bytes"`
+	L2BlockHash        common.Hash        `gorm:"serializer:bytes"`
 
 	ProvenL1TransactionHash    common.Hash `gorm:"serializer:bytes"`
 	FinalizedL1TransactionHash common.Hash `gorm:"serializer:bytes"`
@@ -152,9 +154,10 @@ func (db *bridgeTransfersDB) L1BridgeDepositsByAddress(address common.Address, c
 	ethTransactionDeposits := db.gorm.Model(&L1TransactionDeposit{})
 	ethTransactionDeposits = ethTransactionDeposits.Where(Transaction{FromAddress: address}).Where("data = '0x' AND amount > 0")
 	ethTransactionDeposits = ethTransactionDeposits.Joins("INNER JOIN l1_contract_events ON l1_contract_events.guid = initiated_l1_event_guid")
+	ethTransactionDeposits = ethTransactionDeposits.Joins("INNER JOIN l1_block_headers ON l1_block_headers.hash = l1_contract_events.block_hash")
 	ethTransactionDeposits = ethTransactionDeposits.Select(`
 from_address, to_address, amount, data, source_hash AS transaction_source_hash,
-l2_transaction_hash, l1_contract_events.transaction_hash AS l1_transaction_hash,
+l2_transaction_hash, l1_contract_events.transaction_hash AS l1_transaction_hash, l1_block_headers.hash AS block_hash, 
 l1_transaction_deposits.timestamp, NULL AS cross_domain_message_hash, ? AS local_token_address, ? AS remote_token_address`, ethAddressString, ethAddressString)
 	ethTransactionDeposits = ethTransactionDeposits.Order("timestamp DESC").Limit(limit + 1)
 	if cursorClause != "" {
@@ -164,9 +167,10 @@ l1_transaction_deposits.timestamp, NULL AS cross_domain_message_hash, ? AS local
 	depositsQuery := db.gorm.Model(&L1BridgeDeposit{})
 	depositsQuery = depositsQuery.Joins("INNER JOIN l1_transaction_deposits ON l1_transaction_deposits.source_hash = transaction_source_hash")
 	depositsQuery = depositsQuery.Joins("INNER JOIN l1_contract_events ON l1_contract_events.guid = l1_transaction_deposits.initiated_l1_event_guid")
+	depositsQuery = depositsQuery.Joins("INNER JOIN l1_block_headers ON l1_block_headers.hash = l1_contract_events.block_hash")
 	depositsQuery = depositsQuery.Select(`
 l1_bridge_deposits.from_address, l1_bridge_deposits.to_address, l1_bridge_deposits.amount, l1_bridge_deposits.data, transaction_source_hash,
-l2_transaction_hash, l1_contract_events.transaction_hash AS l1_transaction_hash,
+l2_transaction_hash, l1_contract_events.transaction_hash AS l1_transaction_hash, l1_block_headers.hash AS block_hash,
 l1_bridge_deposits.timestamp, cross_domain_message_hash, local_token_address, remote_token_address`)
 	depositsQuery = depositsQuery.Order("timestamp DESC").Limit(limit + 1)
 	if cursorClause != "" {
