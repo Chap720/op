@@ -7,15 +7,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum-optimism/optimism/op-e2e/e2eutils/wait"
-	"github.com/ethereum-optimism/optimism/op-node/testlog"
-	"github.com/ethereum-optimism/optimism/op-service/clock"
-
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/stretchr/testify/require"
+
+	"github.com/ethereum-optimism/optimism/op-e2e/e2eutils/wait"
+	"github.com/ethereum-optimism/optimism/op-node/testlog"
+	"github.com/ethereum-optimism/optimism/op-service/clock"
 )
 
 func TestMonitorMinGameTimestamp(t *testing.T) {
@@ -157,7 +157,10 @@ func newFDG(proxy common.Address, timestamp uint64) FaultDisputeGame {
 	}
 }
 
-func setupMonitorTest(t *testing.T, allowedGames []common.Address) (*gameMonitor, *stubGameSource, *stubScheduler, *mockNewHeadSource) {
+func setupMonitorTest(
+	t *testing.T,
+	allowedGames []common.Address,
+) (*gameMonitor, *stubGameSource, *stubScheduler, *mockNewHeadSource) {
 	logger := testlog.Logger(t, log.LvlDebug)
 	source := &stubGameSource{}
 	i := uint64(1)
@@ -167,7 +170,16 @@ func setupMonitorTest(t *testing.T, allowedGames []common.Address) (*gameMonitor
 	}
 	sched := &stubScheduler{}
 	mockHeadSource := &mockNewHeadSource{}
-	monitor := newGameMonitor(logger, clock.SystemClock, source, sched, time.Duration(0), fetchBlockNum, allowedGames, mockHeadSource)
+	monitor := newGameMonitor(
+		logger,
+		clock.SystemClock,
+		source,
+		sched,
+		time.Duration(0),
+		fetchBlockNum,
+		allowedGames,
+		mockHeadSource,
+	)
 	return monitor, source, sched, mockHeadSource
 }
 
@@ -175,11 +187,21 @@ type mockNewHeadSource struct {
 	sub *mockSubscription
 }
 
-func (m *mockNewHeadSource) SubscribeNewHead(ctx context.Context, ch chan<- *ethtypes.Header) (ethereum.Subscription, error) {
+func (m *mockNewHeadSource) EthSubscribe(
+	ctx context.Context,
+	ch any,
+	args ...any,
+) (ethereum.Subscription, error) {
 	errChan := make(chan error)
-	m.sub = &mockSubscription{errChan, ch}
+	m.sub = &mockSubscription{errChan, (ch).(chan<- *ethtypes.Header)}
 	return m.sub, nil
 }
+
+// func (m *mockNewHeadSource) SubscribeNewHead(ctx context.Context, ch chan<- *ethtypes.Header) (ethereum.Subscription, error) {
+// 	errChan := make(chan error)
+// 	m.sub = &mockSubscription{errChan, ch}
+// 	return m.sub, nil
+// }
 
 type mockSubscription struct {
 	errChan chan error
@@ -196,7 +218,11 @@ type stubGameSource struct {
 	games []FaultDisputeGame
 }
 
-func (s *stubGameSource) FetchAllGamesAtBlock(ctx context.Context, earliest uint64, blockNumber *big.Int) ([]FaultDisputeGame, error) {
+func (s *stubGameSource) FetchAllGamesAtBlock(
+	ctx context.Context,
+	earliest uint64,
+	blockNumber *big.Int,
+) ([]FaultDisputeGame, error) {
 	return s.games, nil
 }
 

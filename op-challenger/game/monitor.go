@@ -13,6 +13,7 @@ import (
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
+	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
 )
@@ -37,7 +38,19 @@ type gameMonitor struct {
 	fetchBlockNumber blockNumberFetcher
 	allowedGames     []common.Address
 	l1HeadsSub       ethereum.Subscription
-	l1Source         eth.NewHeadSource
+	l1Source         headSource
+}
+
+type MinimalSubscriber interface {
+	EthSubscribe(ctx context.Context, channel interface{}, args ...interface{}) (ethereum.Subscription, error)
+}
+
+type headSource struct {
+	inner MinimalSubscriber
+}
+
+func (s *headSource) SubscribeNewHead(ctx context.Context, ch chan<- *ethTypes.Header) (ethereum.Subscription, error) {
+	return s.inner.EthSubscribe(ctx, ch, "newHeads")
 }
 
 func newGameMonitor(
@@ -48,7 +61,7 @@ func newGameMonitor(
 	gameWindow time.Duration,
 	fetchBlockNumber blockNumberFetcher,
 	allowedGames []common.Address,
-	l1Source eth.NewHeadSource,
+	l1Source MinimalSubscriber,
 ) *gameMonitor {
 	return &gameMonitor{
 		logger:           logger,
@@ -58,7 +71,7 @@ func newGameMonitor(
 		gameWindow:       gameWindow,
 		fetchBlockNumber: fetchBlockNumber,
 		allowedGames:     allowedGames,
-		l1Source:         l1Source,
+		l1Source:         headSource{inner: l1Source},
 	}
 }
 
@@ -121,7 +134,7 @@ func (m *gameMonitor) MonitorGames(ctx context.Context) error {
 		if err != nil {
 			m.logger.Warn("resubscribing after failed L1 subscription", "err", err)
 		}
-		return eth.WatchHeadChanges(ctx, m.l1Source, onNewL1Head)
+		return eth.WatchHeadChanges(ctx, &m.l1Source, onNewL1Head)
 	}
 
 	m.l1HeadsSub = event.ResubscribeErr(10*time.Second, resubFn)
@@ -133,6 +146,7 @@ func (m *gameMonitor) MonitorGames(ctx context.Context) error {
 			if !ok {
 				return err
 			}
+			m.logger.Error("L1 subscription error", "err", err)
 		}
 	}
 }
